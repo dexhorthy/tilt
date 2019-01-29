@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/windmilleng/tilt/internal/dockercompose"
 	"github.com/windmilleng/tilt/internal/hud/view"
 	"github.com/windmilleng/tilt/internal/k8s"
+	"github.com/windmilleng/tilt/internal/logger"
 	"github.com/windmilleng/tilt/internal/model"
 	"github.com/windmilleng/tilt/internal/ospath"
 	v1 "k8s.io/api/core/v1"
@@ -567,7 +569,7 @@ func ManifestTargetEndpoints(mt *ManifestTarget) (endpoints []string) {
 	return endpoints
 }
 
-func StateToView(s EngineState) view.View {
+func StateToView(ctx context.Context, s EngineState) view.View {
 	ret := view.View{
 		TriggerMode: s.TriggerMode,
 		IsProfiling: s.IsProfiling,
@@ -638,6 +640,11 @@ func StateToView(s EngineState) view.View {
 			ResourceInfo:       resourceInfoView(mt),
 		}
 
+		if r.Name.String() == "sleep" {
+			logger.Get(ctx).Infof("sleep is crashing: %v\n", isCrashing(r))
+			logger.Get(ctx).Infof("sleep restart #: %d\n", r.K8SInfo().PodRestarts)
+		}
+
 		ret.Resources = append(ret.Resources, r)
 	}
 
@@ -689,6 +696,14 @@ func StateToView(s EngineState) view.View {
 	ret.Log = string(s.Log)
 
 	return ret
+}
+
+func isCrashing(res view.Resource) bool {
+	return (res.IsK8S() && res.K8SInfo().PodRestarts > 0) ||
+		res.LastBuild().Reason.Has(model.BuildReasonFlagCrash) ||
+		res.CurrentBuild.Reason.Has(model.BuildReasonFlagCrash) ||
+		res.PendingBuildReason.Has(model.BuildReasonFlagCrash) ||
+		res.IsDC() && res.DockerComposeTarget().Status() == string(dockercompose.StatusCrash)
 }
 
 func resourceInfoView(mt *ManifestTarget) view.ResourceInfoView {

@@ -241,7 +241,7 @@ func (h *Hud) handleScreenEvent(ctx context.Context, dispatch func(action store.
 
 func (h *Hud) OnChange(ctx context.Context, st store.RStore) {
 	state := st.RLockState()
-	view := store.StateToView(state)
+	view := store.StateToView(ctx, state)
 	st.RUnlockState()
 
 	h.mu.Lock()

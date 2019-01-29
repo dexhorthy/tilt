@@ -46,7 +46,7 @@ func (h *FakeHud) Refresh(ctx context.Context) {}
 
 func (h *FakeHud) OnChange(ctx context.Context, st store.RStore) {
 	state := st.RLockState()
-	view := store.StateToView(state)
+	view := store.StateToView(ctx, state)
 	st.RUnlockState()
 
 	err := h.Update(view, h.viewState)

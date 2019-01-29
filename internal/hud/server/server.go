@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,7 +37,7 @@ func (s HeadsUpServer) Router() http.Handler {
 
 func (s HeadsUpServer) ViewJSON(w http.ResponseWriter, req *http.Request) {
 	state := s.store.RLockState()
-	view := store.StateToView(state)
+	view := store.StateToView(context.Background(), state)
 	s.store.RUnlockState()
 
 	w.Header().Set("Content-Type", "application/json")
